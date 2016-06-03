@@ -1,6 +1,7 @@
 #include "thread_mcl.h"
 
 QImage thread_mcl::img;
+QString thread_mcl::state;
 
 thread_mcl::thread_mcl(Robot *robo, Mcl *myMcl, Map *myMap, int time, bool localization)
 {
@@ -36,17 +37,22 @@ void thread_mcl::run(){
 //        mv.angle = 0;
 
         img = myMcl->Gera_Imagem_Pixmap(this->robo);
+
+
         robo->move(mv);
 
         myMcl->sampling(mv);
-
+        state = "  Sampling";
+        usleep(500000);
         myMcl->weight_particles(robo->sense());
-
+        state = "  Weighting";
+        usleep(500000);
 //        myMcl->resample();
         myMcl->resample_Roleta();
-
+        state = "  Resampling";
+        usleep(500000);
         cout<<"T:"<<T<<endl;
-        usleep(900000);
+
     }
 
 }

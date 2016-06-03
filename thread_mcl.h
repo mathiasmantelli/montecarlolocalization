@@ -23,6 +23,7 @@ public:
     Robot *robo;
     Mcl *myMcl;
     Map *myMap;
+    static QString state;
 
 
 };

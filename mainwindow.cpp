@@ -12,7 +12,7 @@ MainWindow::MainWindow(int world_size, QWidget *parent) :
     ui->graphicsView->setScene(scene);
 
     QTimer *timer = new QTimer( this );
-    timer->setInterval(300);
+    timer->setInterval(.000003);
 
     connect(timer, SIGNAL(timeout()), this, SLOT(updateTime()));
     timer->start();
@@ -22,6 +22,10 @@ MainWindow::MainWindow(int world_size, QWidget *parent) :
 //TO UPDATE THE IMAGE SHOWED
 void MainWindow::updateTime(){
     scene->addPixmap(QPixmap::fromImage(thread_mcl::img));
+    scene->addSimpleText(thread_mcl::state);
+
+
+
 }
 
 MainWindow::~MainWindow()
