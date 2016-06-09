@@ -47,7 +47,7 @@ public:
     void set_position(position pos);
     void resample_Roleta();
     float mod(float a, float b);
-
+    float number_effective();
 private:
     Map *map;
 

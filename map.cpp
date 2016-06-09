@@ -1,5 +1,7 @@
 #include "map.h"
 
+vector<coordinate> Map::landmarks;
+
 Map::Map(int world)
 {
     world_size = world;

@@ -18,7 +18,7 @@ class Map
 public:
     Map(int world);
     int world_size;
-    vector<coordinate> landmarks;
+    static vector<coordinate> landmarks;
 };
 
 #endif // MAP_H

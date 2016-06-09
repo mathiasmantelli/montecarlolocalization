@@ -19,11 +19,15 @@ public:
     void run();
     int time;
     bool localization;
-    static QImage img;
+
     Robot *robo;
     Mcl *myMcl;
     Map *myMap;
     static QString state;
+    static QImage img;
+    static QString neff;
+    static bool kind;
+    static int n_particles;
 
 
 };

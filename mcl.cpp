@@ -27,7 +27,7 @@ void Mcl::show_particles(){
     for(int i = 0; i < particles.size(); i++){
         cout<<i+1<<" - ";
         cout<<"X:["<<particles[i].x<<"] Y:["<<particles[i].y<<"] Orient:["<<particles[i].th<<"]";
-        cout<<" Weight: "<<particles[i].w<<endl;
+//        cout<<" Weight: "<<particles[i].w<<endl;
     }
 }
 
@@ -73,9 +73,11 @@ void Mcl::weight_particles(vector<float> measur){
     }
     //NORMALIZING THE WEIGHT OF THE PARTICLES
     double soma = 0;
-    for(int i = 0; i < particles.size(); i++)
+    int count = 0;
+    for(int i = 0; i < particles.size(); i++){
         soma += particles[i].w;
-
+        if(particles[i].w == 0) count++;  //COUNT THE AMOUNT OF DEAD PARTICLES
+    }
     for(int i = 0; i < particles.size(); i++)
         particles[i].w /= soma;
 }
@@ -191,8 +193,8 @@ QImage Mcl::Gera_Imagem_Pixmap(Robot *robo){
 
     //DRAWING PARTICLES
     for(int i = 0; i < particles.size(); i++){
-        img = point(particles[i].x, particles[i].y,3,(1 - particles[i].w)*255,0,0,img);
-
+        img = point(particles[i].x, particles[i].y,3,255,(1 - particles[i].w)*255,0,img);
+//        cout<<"Weight: "<<particles[i].w<<endl;
         //PARTICLES' DIRECTION
         float coss,senn;
         coss = cos(particles[i].th);
@@ -202,7 +204,7 @@ QImage Mcl::Gera_Imagem_Pixmap(Robot *robo){
 
     }
     //DRAWING ROBOT
-    img = point(robo->robot_pose.x,robo->robot_pose.y,3,255, 255, 255,img);
+    img = point(robo->robot_pose.x,robo->robot_pose.y,3,255, 0, 255,img);
 
     //ROBOT'S DIRECTION
     float coss,senn;
@@ -212,8 +214,8 @@ QImage Mcl::Gera_Imagem_Pixmap(Robot *robo){
         img.setPixel(robo->robot_pose.x + coss*i, robo->robot_pose.y + senn*i, qRgb(0, 0, 0));
 
     //DRAWING LANDMARKS
-    for(int i = 0; i < map->landmarks.size(); i++)
-        img = point(map->landmarks[i].x,map->landmarks[i].y,4,0,255,0,img);
+//    for(int i = 0; i < map->landmarks.size(); i++)
+//        img = point(map->landmarks[i].x,map->landmarks[i].y,4,0,255,0,img);
 
     return img;
 }
@@ -240,4 +242,13 @@ void Mcl::set_position(position pos){
 
 float Mcl::mod(float a, float b){
     return a - b*floor(a/b);
+}
+
+float Mcl::number_effective(){
+    float neff = 0;
+    for(int i = 0; i < particles.size(); i++){
+        neff += pow(particles[i].w,2);
+    }
+//    cout<<"NEFF: "<<1/neff<<endl;
+    return 1/neff;
 }

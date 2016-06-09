@@ -20,7 +20,7 @@ Robot::Robot(Map *myMap)
 void Robot::set_position(position n){
     if(n.x > map->world_size || n.x < 0) cout<<"X coordinate out of bound"<<endl;
     if(n.y > map->world_size || n.y < 0) cout<<"Y coordinate out of bound"<<endl;
-    if(n.orientation > -M_PI || n.orientation < M_PI) cout<<"Orientation coordinate out of bound"<<endl;
+//    if(n.orientation > -M_PI || n.orientation < M_PI) cout<<"Orientation coordinate out of bound"<<endl;
     robot_pose.x = n.x;
     robot_pose.y = n.y;
     robot_pose.orientation = n.orientation;
