@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     Robot robo(myMap);
     Mcl myMcl(1000,myMap); //Amount of particles
     MainWindow mw(myMap->world_size);
-    thread_mcl tmcl(&robo,&myMcl,myMap,300,true); //TRUE = LOCAL - FALSE = GLOBAL
+    thread_mcl tmcl(&robo,&myMcl,myMap,300,false); //TRUE = LOCAL - FALSE = GLOBAL
 
     tmcl.start(); //Thread starts
     mw.show(); //Show the image

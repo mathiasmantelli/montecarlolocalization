@@ -54,7 +54,7 @@ void thread_mcl::run(){
         usleep(50000);
 //        myMcl->resample();
         float neff2 = myMcl->number_effective();
-        if(neff2 < myMcl->num_particles*0.7){
+        if(neff2 < myMcl->num_particles/2){
             cout<<"NEFF: "<<neff2<<" - Vou fazer resample ";
             myMcl->resample_Roleta();
             state = "\n\t\t\t  Resampling";
