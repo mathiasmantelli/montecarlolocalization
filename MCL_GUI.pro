@@ -17,12 +17,14 @@ SOURCES += main.cpp\
     mcl.cpp \
     robot.cpp \
     thread_mcl.cpp \
-    map.cpp
+    map.cpp \
+    kld.cpp
 
 HEADERS  += mainwindow.h \
     mcl.h \
     robot.h \
     thread_mcl.h \
-    map.h
+    map.h \
+    kld.h
 
 FORMS    += mainwindow.ui
