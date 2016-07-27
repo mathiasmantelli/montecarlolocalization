@@ -155,9 +155,8 @@ void thread_mcl::run_kdl_sampling(){
             cout<<"T:"<<T++<<endl;
         }while(M < Mx);
         show_bin();
-        cout<<"Size new_particles: "<<new_particles.size()<<" - Size particles: "<<myMcl->particles.size()<<endl;
-//        myMcl->particles.clear();
-//        myMcl->particles = new_particles;
+        myMcl->particles.clear();
+        myMcl->particles = new_particles;
 
     }
 }
