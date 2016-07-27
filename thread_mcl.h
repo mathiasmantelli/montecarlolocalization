@@ -9,6 +9,7 @@
 #include <QtGui>
 #include <map.h>
 #include <cstdlib>
+#include <limits>
 
 using namespace std;
 
@@ -17,6 +18,10 @@ class thread_mcl : public QThread
 public:
     thread_mcl(Robot *robo, Mcl *myMcl, Map *myMap, int time, bool localization);
     void run();
+    void run_kdl_sampling();
+    void run_normal();
+    bool bin_is_empty(particle oneP);
+    void show_bin();
     int time;
     bool localization;
 

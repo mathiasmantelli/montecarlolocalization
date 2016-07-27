@@ -33,9 +33,17 @@ public:
     random_device generator;
 
     void show_particles();
+
     void sampling(movement new_pose);
+    particle sampling_single(default_random_engine generator, uniform_real_distribution<double> randomValue, particle oneP, movement new_pose);
 
     void weight_particles(vector<float> measur);
+    particle weight_particles_single(particle oneP, vector<float> measur);
+    void normalizing_particle();
+
+    void resample_Roleta();
+    void resample_Roleta_single();
+
     void show_weight_particles();
     void set_noise_particles(float foward, float turn, float sense);
     void resample();
@@ -45,7 +53,7 @@ public:
     float measurement_prob(vector<float> measurements);
     float gaussian(float dist, float sense_noise, float measurement);
     void set_position(position pos);
-    void resample_Roleta();
+
     float mod(float a, float b);
     float number_effective();
 private:

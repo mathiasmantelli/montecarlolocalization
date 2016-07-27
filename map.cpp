@@ -34,3 +34,14 @@ Map::Map(int world)
     temp.y = .2*world_size;
     landmarks.push_back(temp);
 }
+
+//SET EMPTY GRID
+void Map::set_empty_map(){
+    for(int i = 0; i < world_size; i++){
+        vector<int> test;
+        for(int j = 0; j < empty.size(); j++){
+            test.push_back(0);
+        }
+        empty.push_back(test);
+    }
+}

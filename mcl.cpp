@@ -55,6 +55,28 @@ void Mcl::sampling(movement new_pose){
     }
 }
 
+
+//TO MOVE THE PARTICLES - KLD SAMPLING modification
+particle Mcl::sampling_single(default_random_engine generator, uniform_real_distribution<double> randomValue, particle oneP, movement new_pose){
+    float dist;
+
+    position aux;
+
+    float orient = oneP.th + new_pose.angle + randomValue(generator);
+    orient = mod(orient, 2*M_PI);
+
+    dist = new_pose.dist + randomValue(generator);
+
+    aux.x = oneP.x + (cos(orient) * dist);
+    aux.y = oneP.y + (sin(orient) * dist);
+
+    oneP.x = fmod(aux.x, map->world_size);
+    oneP.y = fmod(aux.y, map->world_size);
+    oneP.th = orient;
+
+    return oneP;
+}
+
 //CALCULATES HOW LIKELY A MEASUREMENT SHOULD BE
 void Mcl::weight_particles(vector<float> measur){
     float dist;
@@ -72,6 +94,34 @@ void Mcl::weight_particles(vector<float> measur){
         }
     }
     //NORMALIZING THE WEIGHT OF THE PARTICLES
+    double soma = 0;
+    int count = 0;
+    for(int i = 0; i < particles.size(); i++){
+        soma += particles[i].w;
+        if(particles[i].w == 0) count++;  //COUNT THE AMOUNT OF DEAD PARTICLES
+    }
+    for(int i = 0; i < particles.size(); i++)
+        particles[i].w /= soma;
+}
+
+//CALCULATES HOW LIKELY A MEASUREMENT SHOULD BE - KLD SAMPLING modification
+particle Mcl::weight_particles_single(particle oneP, vector<float> measur){
+    float dist, prob = 1.0;
+    //TO VERIFY IF THE PARTICLE IS OUT OF THE MAP
+    if(oneP.x < 0 || oneP.x > map->world_size || oneP.y < 0 || oneP.y > map->world_size){
+        oneP.w = 0;
+    }else{
+        for(int j = 0; j < map->landmarks.size(); j++){
+            dist = sqrt(pow(oneP.x - map->landmarks[j].x, 2) + pow(oneP.y - map->landmarks[j].y, 2));
+            prob *= gaussian(measur[j], oneP.error.sense_noise, dist);
+        }
+        oneP.w = prob;
+    }
+    return oneP;
+}
+
+//NORMALIZING THE WEIGHT OF THE PARTICLES - KLD SAMPLING modification
+void Mcl::normalizing_particle(){
     double soma = 0;
     int count = 0;
     for(int i = 0; i < particles.size(); i++){
@@ -252,3 +302,5 @@ float Mcl::number_effective(){
 //    cout<<"NEFF: "<<1/neff<<endl;
     return 1/neff;
 }
+
+

@@ -19,6 +19,8 @@ public:
     Map(int world);
     int world_size;
     static vector<coordinate> landmarks;
+    vector< vector <int> > empty;
+    void set_empty_map();
 };
 
 #endif // MAP_H

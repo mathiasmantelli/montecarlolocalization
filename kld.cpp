@@ -52,10 +52,10 @@ void kld_sampling::init(float quantile, float err, const vector<float>& bsz, int
   max_error=err;
   bin_size=bsz;
 
-  zvalue=4.1;
+  zvalue=4.1; //    4.1, why?
   for (unsigned int i=0; i<kld_sampling::ztable.size();i++)
     if (kld_sampling::ztable[i] >= confidence) {
-      zvalue=i/100.0;
+      zvalue=i/100.0; //    i/100.00, why?
       break;
     }
 }
