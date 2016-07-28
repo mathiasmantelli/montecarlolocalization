@@ -40,11 +40,12 @@ void Mcl::sampling(movement new_pose){
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine generator (seed);
         std::uniform_real_distribution<double> randomValue(-.5,.5);
+        uniform_int_distribution<int> randomDist(1, 3);
 
         float orient = particles[i].th + new_pose.angle + randomValue(generator);
         orient = mod(orient, 2*M_PI);
 
-        dist = new_pose.dist + randomValue(generator);
+        dist = new_pose.dist + randomDist(generator);
 
         aux.x = particles[i].x + (cos(orient) * dist);
         aux.y = particles[i].y + (sin(orient) * dist);
@@ -57,15 +58,20 @@ void Mcl::sampling(movement new_pose){
 
 
 //TO MOVE THE PARTICLES - KLD SAMPLING modification
-particle Mcl::sampling_single(default_random_engine generator, uniform_real_distribution<double> randomValue, particle oneP, movement new_pose){
+particle Mcl::sampling_single(particle oneP, movement new_pose){
+    //RANDOM VALUES TO SAMPLING
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine generator(seed);
+    uniform_int_distribution<int> randomDist2(1, 3);
+    uniform_real_distribution<double> randomTh2(-.5,.5);
     float dist;
 
     position aux;
 
-    float orient = oneP.th + new_pose.angle + randomValue(generator);
+    float orient = oneP.th + new_pose.angle + randomTh2(generator);
     orient = mod(orient, 2*M_PI);
 
-    dist = new_pose.dist + randomValue(generator);
+    dist = new_pose.dist + randomDist2(generator);
 
     aux.x = oneP.x + (cos(orient) * dist);
     aux.y = oneP.y + (sin(orient) * dist);
@@ -88,8 +94,11 @@ void Mcl::weight_particles(vector<float> measur){
         }else{
             for(int j = 0; j < map->landmarks.size(); j++){
                 dist = sqrt(pow(particles[i].x - map->landmarks[j].x, 2) + pow(particles[i].y - map->landmarks[j].y, 2));
+                cout<<"DIST(part):"<<dist<<" - DIST(robot):"<<measur[j]<<" ";
                 prob *= gaussian(measur[j], particles[i].error.sense_noise, dist);
+                cout<<"Result gaussian["<<j+1<<"]:"<<gaussian(measur[j], particles[i].error.sense_noise, dist)<<endl;
             }
+            cout<<endl;
             particles[i].w = prob;
         }
     }
@@ -192,13 +201,13 @@ void Mcl::resample_Roleta(){
     for(int k=0;k<populacaoAux.size();k++){
         somaPesos += populacaoAux[k].w;
     }
+
     if(somaPesos==0.0) cout<<"Hybrid::resampling  -  somaPesos eh 0"<<endl;
 
     //RECRIA A POPULACAO COM A ROLETA
     for(int k=0;k<num_particles;k++){
         int l;
         double r= (double)rand() / RAND_MAX;
-        //           cout<<"r="<<r<<endl;
         l=-1;
         do{
             l++;
@@ -209,6 +218,29 @@ void Mcl::resample_Roleta(){
         } while(r>0.0);
         particles.push_back(populacaoAux[l]);
     }
+}
+
+particle Mcl::resample_Roleta_single(){
+    double somaPesos=0.0;
+    for(int k=0;k<particles.size();k++){
+        somaPesos += particles[k].w;
+    }
+
+    if(somaPesos==0.0) cout<<"Hybrid::resampling  -  somaPesos eh 0"<<endl;
+
+    //RECRIA A POPULACAO COM A ROLETA
+    int l;
+    double r= (double)rand() / RAND_MAX;
+    //           cout<<"r="<<r<<endl;
+    l=-1;
+    do{
+        l++;
+        if(l>particles.size()-1){
+            l=particles.size()-1;
+        }
+        r=r-particles[l].w;
+    } while(r>0.0);
+    return particles[l];
 }
 
 void Mcl::set_noise_particles(float foward, float turn, float sense){

@@ -19,6 +19,7 @@ thread_mcl::thread_mcl(Robot *robo, Mcl *myMcl, Map *myMap, int time, bool local
 
 void thread_mcl::run(){
     this->run_kdl_sampling();
+//    this->run_normal();
 }
 
 void thread_mcl::run_normal(){
@@ -102,72 +103,69 @@ void thread_mcl::run_kdl_sampling(){
     random_device generator;
     mt19937 gen(generator());
     uniform_int_distribution<int> randomDist(1, 3);
-    uniform_real_distribution<float> randomTh(-.5,.5);
+    std::uniform_real_distribution<double> randomTh(-.5,.5);
 
     if(localization) //TRUE = LOCAL
         myMcl->set_position(robo->robot_pose);
 
-    //RANDOM VALUES TO SAMPLING
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::default_random_engine generator_sampling (seed);
-    std::uniform_real_distribution<double> randomValue(-.5,.5);
-
     while(true){
+        particle new_particle;
         vector<particle> new_particles;
         k = M = 0;
-        Mx = numeric_limits<int>::max();
-        this->myMap->set_empty_map(); //SET EMPTY MAP - KLD sampling
+        Mx = 5000;//numeric_limits<int>::max();
+        this->myMap->set_empty_map(); //SET EMPTY MAP
+
+        show_bin();
 
         mv.dist = randomDist(gen);
         mv.angle = randomTh(gen);
-//        mv.dist = 5;
-//        mv.angle = 0;
 
         img = myMcl->Gera_Imagem_Pixmap(this->robo);
 
         robo->move(mv);
+
+        myMcl->normalizing_particle();
+        new_particles.clear();
         do{
-            myMcl->particles[M] = myMcl->sampling_single(generator_sampling, randomValue,myMcl->particles[M],mv);
+            new_particle = myMcl->resample_Roleta_single();
+//            myMcl->resample_Roleta();
+            state = "\n\t\t\t  Resampling";
+
+            new_particle = myMcl->sampling_single(new_particle, mv);
+//            myMcl->sampling(mv);
             state = "\n\t\t\t  Sampling";
-            usleep(50000);
 
-            myMcl->particles[M] = myMcl->weight_particles_single(myMcl->particles[M], robo->sense());
-            myMcl->normalizing_particle();
+            new_particle = myMcl->weight_particles_single(new_particle, robo->sense());
+//            myMcl->weight_particles(robo->sense());
             state = "\n\t\t\t  Weighting";
-            usleep(50000);
 
-            new_particles.push_back(myMcl->particles[M]);
+            new_particles.push_back(new_particle);
 
-            if(bin_is_empty(myMcl->particles[M])){
+            if(bin_is_empty(new_particle)){
                 k++;
                 if(k > 1){
                   k--;
-                  Mx = (int)ceil((k/2*error)*pow(1 - (2/9*k) + (sqrt(2/9*k))*zvalue,3));
+                  Mx = 5000;//(int)ceil((k/2*error)*pow(1 - (2/9*k) + (sqrt(2/9*k))*zvalue,3));
                   k++;
                 }
             }
             M++;
-    //        myMcl->resample_Roleta();
-    //        state = "\n\t\t\t  Resampling";
-    //        usleep(50000);
-    //        neff = "OFF";
-
-            cout<<"T:"<<T++<<endl;
+            cout<<"M:"<<M<<endl;
         }while(M < Mx);
         show_bin();
         myMcl->particles.clear();
         myMcl->particles = new_particles;
-
     }
 }
 
 bool thread_mcl::bin_is_empty(particle oneP){
-    if(myMap->empty[oneP.x][oneP.y] == 1){
-        cout<<"FALSE - "<<myMap->empty[oneP.x][oneP.y]<<" "<<endl;
+    if(myMap->empty[oneP.x][oneP.y] > 0){
+        myMap->empty[oneP.x][oneP.y]++;
+//        cout<<"NO EMPTY - "<<myMap->empty[oneP.x][oneP.y]<<" "<<endl;
         return false;
     }else{
-        cout<<"TRUE - "<<myMap->empty[oneP.x][oneP.y]<<" "<<endl;
-        myMap->empty[oneP.x][oneP.y] = 1;
+//        cout<<"EMPTY - "<<myMap->empty[oneP.x][oneP.y]<<" "<<endl;
+        myMap->empty[oneP.x][oneP.y]++;
         return true;
     }
 }
@@ -175,9 +173,9 @@ bool thread_mcl::bin_is_empty(particle oneP){
 void thread_mcl::show_bin(){
     for(int i = 0; i < myMap->empty.size(); i++){
         for(int j = 0; j < myMap->empty[i].size(); j++){
-//            cout<<myMap->empty[i][j]<<" ";
+            cout<<myMap->empty[i][j];
         }
-//        cout<<endl;
+        cout<<endl;
     }
 }
 

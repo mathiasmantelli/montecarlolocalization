@@ -39,7 +39,7 @@ Map::Map(int world)
 void Map::set_empty_map(){
     for(int i = 0; i < world_size; i++){
         vector<int> test;
-        for(int j = 0; j < empty.size(); j++){
+        for(int j = 0; j < world_size; j++){
             test.push_back(0);
         }
         empty.push_back(test);
