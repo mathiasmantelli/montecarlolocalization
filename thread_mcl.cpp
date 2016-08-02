@@ -15,6 +15,7 @@ thread_mcl::thread_mcl(Robot *robo, Mcl *myMcl, Map *myMap, int time, bool local
     this->myMap = myMap;
     this->kind = localization;
     this->n_particles = myMcl->num_particles;
+
 }
 
 void thread_mcl::run(){
@@ -23,7 +24,6 @@ void thread_mcl::run(){
 }
 
 void thread_mcl::run_normal(){
-
     bool flag_neff;
     int T;
 
@@ -89,7 +89,8 @@ void thread_mcl::run_normal(){
 }
 
 void thread_mcl::run_kdl_sampling(){
-    float error, zvalue;
+    this->build_tablez();
+    float confidence, error, zvalue;
     int T, k, M, Mx;
 
     T = 0;
@@ -108,35 +109,42 @@ void thread_mcl::run_kdl_sampling(){
     if(localization) //TRUE = LOCAL
         myMcl->set_position(robo->robot_pose);
 
+    confidence = 0.32548; // ztable is from right side of mean (Values between 0 ~ .5)
+    confidence = fmin(0.49998,fmax(0,confidence));
+
+    error = 10;
+    zvalue = 4.1;
+    for(int i = 0; i < ztable.size(); i++){
+        if(ztable[i] >= confidence){
+            cout<<"ztable["<<i<<"] = "<<ztable[i]<<"  >=  "<<confidence<<endl;
+            zvalue = i/100.00;
+            break;
+        }
+    }
+
     while(true){
         particle new_particle;
         vector<particle> new_particles;
         k = M = 0;
-        Mx = 5000;//numeric_limits<int>::max();
+        Mx = numeric_limits<int>::max();
         this->myMap->set_empty_map(); //SET EMPTY MAP
-
-        show_bin();
 
         mv.dist = randomDist(gen);
         mv.angle = randomTh(gen);
+        robo->move(mv);
 
         img = myMcl->Gera_Imagem_Pixmap(this->robo);
-
-        robo->move(mv);
 
         myMcl->normalizing_particle();
         new_particles.clear();
         do{
-            new_particle = myMcl->resample_Roleta_single();
-//            myMcl->resample_Roleta();
+            new_particle = myMcl->resample_Roleta_single();  //RESAMPLING
             state = "\n\t\t\t  Resampling";
 
-            new_particle = myMcl->sampling_single(new_particle, mv);
-//            myMcl->sampling(mv);
+            new_particle = myMcl->sampling_single(new_particle, mv); //SAMPLING
             state = "\n\t\t\t  Sampling";
 
-            new_particle = myMcl->weight_particles_single(new_particle, robo->sense());
-//            myMcl->weight_particles(robo->sense());
+            new_particle = myMcl->weight_particles_single(new_particle, robo->sense()); //WEIGHTING
             state = "\n\t\t\t  Weighting";
 
             new_particles.push_back(new_particle);
@@ -145,16 +153,16 @@ void thread_mcl::run_kdl_sampling(){
                 k++;
                 if(k > 1){
                   k--;
-                  Mx = 5000;//(int)ceil((k/2*error)*pow(1 - (2/9*k) + (sqrt(2/9*k))*zvalue,3));
+                  Mx = (int)ceil((k/(2*error))*pow(1 - (2/(9.0*k)) + (sqrt(2/(9.0*k)))*zvalue,3));
                   k++;
                 }
             }
             M++;
-            cout<<"M:"<<M<<endl;
+            cout<<"M:"<<M<<" Mx:"<<Mx<<endl;
         }while(M < Mx);
-        show_bin();
         myMcl->particles.clear();
         myMcl->particles = new_particles;
+        sleep(1);
     }
 }
 
@@ -179,3 +187,17 @@ void thread_mcl::show_bin(){
     }
 }
 
+void thread_mcl::build_tablez(){
+    float tmp;
+    ifstream ifile;
+    ifile.open("/home/mathias/Dropbox/Mestrado/montecarlolocalization/ztable.data");
+    if(ifile.is_open()){
+        while(!ifile.eof()){
+            ifile >> tmp;
+            ztable.push_back(tmp);
+        }
+    }else{
+        cout<<"ERROR - FILE ztable.data isn't open"<<endl;
+        exit(-1);
+    }
+}

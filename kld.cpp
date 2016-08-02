@@ -86,7 +86,7 @@ int kld_sampling::update(const vector<float>& sample) {
       int k=support_samples-1;
       k=(int)ceil(k/(2*max_error)*pow(1-2/(9.0*k)+sqrt(2/(9.0*k))*zvalue,3));
       if (k > kld_samples)
-    kld_samples=k;
+        kld_samples=k;
     }
   }
   return kld_samples;

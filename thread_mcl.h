@@ -10,6 +10,7 @@
 #include <map.h>
 #include <cstdlib>
 #include <limits>
+#include <fstream>
 
 using namespace std;
 
@@ -22,12 +23,14 @@ public:
     void run_normal();
     bool bin_is_empty(particle oneP);
     void show_bin();
+    void build_tablez();
     int time;
     bool localization;
 
     Robot *robo;
     Mcl *myMcl;
     Map *myMap;
+    vector<float> ztable;
     static QString state;
     static QImage img;
     static QString neff;
