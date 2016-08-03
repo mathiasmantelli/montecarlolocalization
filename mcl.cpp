@@ -271,11 +271,11 @@ QImage Mcl::Gera_Imagem_Pixmap(Robot *robo){
     //BRACKGROUND COLOR
     for (int x = 0; x < tam; ++x)
         for (int y = 0; y < tam; ++y)
-            img.setPixel(x,y,qRgb(165, 115, 0));
+            img.setPixel(x,y,qRgb(255, 255, 255));
 
     //DRAWING PARTICLES
     for(int i = 0; i < particles.size(); i++){
-        img = point(particles[i].x, particles[i].y,3,255,(1 - particles[i].w)*255,0,img);
+        img = point(particles[i].x, particles[i].y,3,0,(1 - particles[i].w)*255,0,img);
 //        cout<<"Weight: "<<particles[i].w<<endl;
         //PARTICLES' DIRECTION
         float coss,senn;

@@ -19,7 +19,7 @@ public:
     Map(int world);
     int world_size;
     static vector<coordinate> landmarks;
-    vector< vector <int> > empty;
+    vector< vector <bool> > empty;
     void set_empty_map();
 };
 

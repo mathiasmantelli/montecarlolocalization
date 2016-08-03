@@ -35,7 +35,7 @@ void thread_mcl::run_normal(){
     robo->representation();
 
 //    myMcl.set_position(robo.robot_pose);
-    myMcl->set_noise_particles(0.01, 0.01, 4.0);
+    myMcl->set_noise_particles(0.01, 0.01, 3.0);
     movement mv;
 
     random_device generator;
@@ -60,11 +60,11 @@ void thread_mcl::run_normal(){
 
         myMcl->sampling(mv);
         state = "\n\t\t\t  Sampling";
-        usleep(50000);
+        usleep(90000);
 
         myMcl->weight_particles(robo->sense());
         state = "\n\t\t\t  Weighting";
-        usleep(50000);
+        usleep(90000);
 
         if(flag_neff){ //TRUE = neff on  - FALSE = neff off
 
@@ -74,13 +74,13 @@ void thread_mcl::run_normal(){
 //                myMcl->resample();
                 myMcl->resample_Roleta();
                 state = "\n\t\t\t  Resampling";
-                usleep(50000);
+                usleep(90000);
             }
             neff = QString::number(neff2);
         }else{
             myMcl->resample_Roleta();
             state = "\n\t\t\t  Resampling";
-            usleep(50000);
+            usleep(90000);
             neff = "OFF";
         }
         cout<<"T:"<<T++<<endl;
@@ -91,14 +91,14 @@ void thread_mcl::run_normal(){
 void thread_mcl::run_kdl_sampling(){
     this->build_tablez();
     float confidence, error, zvalue;
-    int T, k, M, Mx;
+    int T, k, M, Mx, limit_min;
 
     T = 0;
-
+    limit_min = 300;
     robo->representation();
 
 //    myMcl.set_position(robo.robot_pose);
-    myMcl->set_noise_particles(0.01, 0.01, 4.0);
+    myMcl->set_noise_particles(0.01, 0.01, 3.0);
     movement mv;
 
     random_device generator;
@@ -109,15 +109,16 @@ void thread_mcl::run_kdl_sampling(){
     if(localization) //TRUE = LOCAL
         myMcl->set_position(robo->robot_pose);
 
-    confidence = 0.32548; // ztable is from right side of mean (Values between 0 ~ .5)
+    confidence = 0.49; // ztable is from right side of mean (Values between 0 ~ .5)
     confidence = fmin(0.49998,fmax(0,confidence));
 
-    error = 10;
+    error = 1;
     zvalue = 4.1;
     for(int i = 0; i < ztable.size(); i++){
         if(ztable[i] >= confidence){
-            cout<<"ztable["<<i<<"] = "<<ztable[i]<<"  >=  "<<confidence<<endl;
             zvalue = i/100.00;
+            cout<<"ztable["<<i<<"] = "<<ztable[i]<<"  >=  "<<confidence<<endl;
+            cout<<"VALOR DO Z: "<<zvalue<<endl;
             break;
         }
     }
@@ -152,14 +153,17 @@ void thread_mcl::run_kdl_sampling(){
             if(bin_is_empty(new_particle)){
                 k++;
                 if(k > 1){
-                  k--;
-                  Mx = (int)ceil((k/(2*error))*pow(1 - (2/(9.0*k)) + (sqrt(2/(9.0*k)))*zvalue,3));
-                  k++;
+                  Mx = (int)ceil(((k-1)/(2*error))*pow(1 - (2/(9.0*(k-1))) + (sqrt(2/(9.0*(k-1))))*zvalue,3));
+                  cout<<"VALOR DO Mx: "<<Mx<<endl;
+                }
+                if(Mx < limit_min){
+                    Mx = limit_min;
                 }
             }
             M++;
             cout<<"M:"<<M<<" Mx:"<<Mx<<endl;
         }while(M < Mx);
+        cout<<"------------------ End-while -------------------"<<endl;
         myMcl->particles.clear();
         myMcl->particles = new_particles;
         sleep(1);
@@ -167,23 +171,11 @@ void thread_mcl::run_kdl_sampling(){
 }
 
 bool thread_mcl::bin_is_empty(particle oneP){
-    if(myMap->empty[oneP.x][oneP.y] > 0){
-        myMap->empty[oneP.x][oneP.y]++;
-//        cout<<"NO EMPTY - "<<myMap->empty[oneP.x][oneP.y]<<" "<<endl;
-        return false;
-    }else{
-//        cout<<"EMPTY - "<<myMap->empty[oneP.x][oneP.y]<<" "<<endl;
-        myMap->empty[oneP.x][oneP.y]++;
+    if(myMap->empty[oneP.x][oneP.y]){ //TRUE -> IT MEANS THAT THE BIN WAS EMPTY
+        myMap->empty[oneP.x][oneP.y] = false;
         return true;
-    }
-}
-
-void thread_mcl::show_bin(){
-    for(int i = 0; i < myMap->empty.size(); i++){
-        for(int j = 0; j < myMap->empty[i].size(); j++){
-            cout<<myMap->empty[i][j];
-        }
-        cout<<endl;
+    }else{                            //FALSE -> IT MEANS THAT THE BIN IS NON-EMPTY
+        return false;
     }
 }
 

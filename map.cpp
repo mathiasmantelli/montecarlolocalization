@@ -22,12 +22,12 @@ Map::Map(int world)
     //LEFT DOWN
     temp.x = .2*world_size;
     temp.y = .8*world_size;
-    landmarks.push_back(temp);
+//    landmarks.push_back(temp);
 
     //RIGHT DOWN
     temp.x = .8*world_size;
     temp.y = .8*world_size;
-    landmarks.push_back(temp);
+//    landmarks.push_back(temp);
 
     //RIGHT UP
     temp.x = .8*world_size;
@@ -37,10 +37,12 @@ Map::Map(int world)
 
 //SET EMPTY GRID
 void Map::set_empty_map(){
+    empty.clear();
     for(int i = 0; i < world_size; i++){
-        vector<int> test;
+        vector<bool> test;
+        test.clear();
         for(int j = 0; j < world_size; j++){
-            test.push_back(0);
+            test.push_back(true); //TRUE = EMPTY | FALSE = NON-EMPTY
         }
         empty.push_back(test);
     }
