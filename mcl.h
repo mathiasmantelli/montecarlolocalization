@@ -21,6 +21,7 @@ typedef struct particle{
     int x, y;
     float th;
     double w;
+    double s;
     noises error;
 }particle;
 
@@ -59,6 +60,7 @@ public:
     float number_effective();
 private:
     Map *map;
+    double maxscale, minscale;
 
 };
 

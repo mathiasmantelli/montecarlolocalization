@@ -4,9 +4,12 @@ Mcl::Mcl(int num_pat, Map *MyMap){
     num_particles = num_pat;
     map = MyMap;
 
+    minscale = 0.5;
+    maxscale = 1.5;
     mt19937 gen(generator());
     uniform_int_distribution<int> randomXY(5.0,MyMap->world_size-5);
     uniform_real_distribution<float> randomTh(-M_PI,M_PI);
+    uniform_real_distribution<double> randomS(minscale, maxscale);
     particles.resize(num_particles);
 
     //Creating the particles with position, orientation, and errors
@@ -18,6 +21,7 @@ Mcl::Mcl(int num_pat, Map *MyMap){
         particles[i].error.forward_noise = 0.0;
         particles[i].error.turn_noise = 0.0;
         particles[i].error.sense_noise = 0.0;
+        particles[i].s = randomS(gen);
     }
 
 }
@@ -40,6 +44,7 @@ void Mcl::sampling(movement new_pose){
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine generator (seed);
         std::uniform_real_distribution<double> randomValue(-.5,.5);
+        uniform_real_distribution<double> randomS(-0.1,0.1);
         uniform_int_distribution<int> randomDist(1, 3);
 
         float orient = particles[i].th + new_pose.angle + randomValue(generator);
@@ -53,6 +58,7 @@ void Mcl::sampling(movement new_pose){
         particles[i].x = fmod(aux.x, map->world_size);
         particles[i].y = fmod(aux.y, map->world_size);
         particles[i].th = orient;
+        particles[i].s += randomS(generator);
     }
 }
 
@@ -62,8 +68,9 @@ particle Mcl::sampling_single(particle oneP, movement new_pose){
     //RANDOM VALUES TO SAMPLING
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator(seed);
-    uniform_int_distribution<int> randomDist2(1, 3);
+    uniform_int_distribution<int> randomDist2(1, 2);
     uniform_real_distribution<double> randomTh2(-.5,.5);
+    uniform_real_distribution<double> randomS(-0.01,0.01);
     float dist;
 
     position aux;
@@ -79,6 +86,7 @@ particle Mcl::sampling_single(particle oneP, movement new_pose){
     oneP.x = fmod(aux.x, map->world_size);
     oneP.y = fmod(aux.y, map->world_size);
     oneP.th = orient;
+    oneP.s += randomS(generator);
 
     return oneP;
 }
@@ -94,7 +102,8 @@ void Mcl::weight_particles(vector<float> measur){
         }else{
             for(int j = 0; j < map->landmarks.size(); j++){
                 dist = sqrt(pow(particles[i].x - map->landmarks[j].x, 2) + pow(particles[i].y - map->landmarks[j].y, 2));
-                cout<<"DIST(part):"<<dist<<" - DIST(robot):"<<measur[j]<<" ";
+                cout<<"DIST(part):"<<dist<<" - DIST(robot):"<<measur[j]<<" "<<" - DIST*SCALE:"<<dist*particles[i].s;
+                dist *= particles[i].s;
                 prob *= gaussian(measur[j], particles[i].error.sense_noise, dist);
                 cout<<"Result gaussian["<<j+1<<"]:"<<gaussian(measur[j], particles[i].error.sense_noise, dist)<<endl;
             }
@@ -122,6 +131,7 @@ particle Mcl::weight_particles_single(particle oneP, vector<float> measur){
     }else{
         for(int j = 0; j < map->landmarks.size(); j++){
             dist = sqrt(pow(oneP.x - map->landmarks[j].x, 2) + pow(oneP.y - map->landmarks[j].y, 2));
+            dist *= oneP.s;
             prob *= gaussian(measur[j], oneP.error.sense_noise, dist);
         }
         oneP.w = prob;
@@ -335,4 +345,21 @@ float Mcl::number_effective(){
     return 1/neff;
 }
 
+/**
+   Initialize a round of KLD sampling.  Takes in kld-parameters:
+   quantile, kld-error, bin size, minimum number of samples.
+
+   Some extra informations:
+   -quantile: Probability that the KL-distance between the discrete, sampled distribution (set by bin-size) is
+              less than ERROR from the true distribution. Must be between 0.5 and 1.0.
+
+   -kld-error: Target KL-distance between discrete, sampled distribution and true underlying distribution. Must
+               be greater than 0.
+
+   -bin size: KLD-sampling uses discrete bins to detect how well the underlying distribution is being sampled.
+              The larger the bins, the fewer particles needed, but the less accurate the discrete, sampled
+              distribution will be. Value must be greater than 0.
+
+   -minimum number of samples: Minimum number of samples. KLD-sampling always samples at least 10 samples.
+**/
 

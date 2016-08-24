@@ -48,30 +48,6 @@ vector<float> Robot::sense(){
     return Z;
 }
 
-//void Robot::move(pose new_pose){
-
-//    position aux;
-//    std::default_random_engine generator;
-//    normal_distribution<float> randomT(0.0,noises.turn_noise);
-//    normal_distribution<double> randomF(0.0,noises.forward_noise);
-
-//    //turn, and add randomness to the turning command
-
-//    aux.x = robot_pose.x + cos(robot_pose.orientation)*new_pose.x - sin(robot_pose.orientation)*new_pose.y;//+ randomF(generator)
-//    aux.y = robot_pose.y + sin(robot_pose.orientation)*new_pose.x + cos(robot_pose.orientation)*new_pose.y;//+ randomF(generator)
-//    aux.orientation = robot_pose.orientation + new_pose.theta; //+ randomT(generator)
-//    cout<<"1 - Orientação:"<<aux.orientation<<endl;
-//    while(aux.orientation > M_PI)
-//        aux.orientation -= 2*M_PI;
-//    while(aux.orientation < -M_PI)
-//        aux.orientation += 2*M_PI;
-//    cout<<"2 - Orientação:"<<aux.orientation<<endl;
-
-//    set_position(aux);
-//    set_noise(noises.forward_noise, noises.turn_noise, noises.sense_noise);
-
-//}
-
 void Robot::move(movement mv){
     position aux;
     std::default_random_engine generator;
@@ -100,8 +76,6 @@ void Robot::move(movement mv){
         cout<<"DIST == 0"<<endl;
     }
 }
-
-
 
 //calculates the probability of x for 1-dim Gaussian with mean mu and var. sigma
 float Robot::gaussian(float dist, float sense_noise, float measurement){

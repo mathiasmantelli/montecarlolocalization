@@ -17,7 +17,7 @@ using namespace std;
 class thread_mcl : public QThread
 {
 public:
-    thread_mcl(Robot *robo, Mcl *myMcl, Map *myMap, int time, bool localization);
+    thread_mcl(Robot *robo, Mcl *myMcl, Map *myMap, int time, bool localization, bool kld);
     void run();
     void run_kdl_sampling();
     void run_normal();
@@ -26,6 +26,7 @@ public:
     void build_tablez();
     int time;
     bool localization;
+    bool kld;
 
     Robot *robo;
     Mcl *myMcl;

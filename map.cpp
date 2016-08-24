@@ -22,12 +22,12 @@ Map::Map(int world)
     //LEFT DOWN
     temp.x = .2*world_size;
     temp.y = .8*world_size;
-//    landmarks.push_back(temp);
+    landmarks.push_back(temp);
 
     //RIGHT DOWN
     temp.x = .8*world_size;
     temp.y = .8*world_size;
-//    landmarks.push_back(temp);
+    landmarks.push_back(temp);
 
     //RIGHT UP
     temp.x = .8*world_size;

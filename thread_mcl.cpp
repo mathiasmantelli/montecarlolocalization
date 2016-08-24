@@ -6,7 +6,7 @@ QString thread_mcl::neff;
 bool thread_mcl::kind;
 int thread_mcl::n_particles;
 
-thread_mcl::thread_mcl(Robot *robo, Mcl *myMcl, Map *myMap, int time, bool localization)
+thread_mcl::thread_mcl(Robot *robo, Mcl *myMcl, Map *myMap, int time, bool localization, bool kld)
 {
     this->robo = robo;
     this->myMcl = myMcl;
@@ -15,33 +15,36 @@ thread_mcl::thread_mcl(Robot *robo, Mcl *myMcl, Map *myMap, int time, bool local
     this->myMap = myMap;
     this->kind = localization;
     this->n_particles = myMcl->num_particles;
-
+    this->kld = kld;
 }
 
 void thread_mcl::run(){
-    this->run_kdl_sampling();
-//    this->run_normal();
+    if(kld){
+        this->run_kdl_sampling();
+    }else{
+        this->run_normal();
+    }
 }
 
 void thread_mcl::run_normal(){
-    bool flag_neff;
-    int T;
-
     //--- SETTING VARIABLES ---
-    T = 0;
-    flag_neff = false;
+    int T = 0;
+    int timeSleep = 90000;
+    bool flag_neff = false;
+    float noise_foward = 0.01;
+    float noise_turn = 0.01;
+    float noise_sense = 3.0;
+    movement mv;
+    random_device generator;
+    mt19937 gen(generator());
+
+    uniform_int_distribution<int> randomDist(1, 3);
+    uniform_real_distribution<float> randomTh(-.5,.5);
     //-------------------------
 
     robo->representation();
 
-//    myMcl.set_position(robo.robot_pose);
-    myMcl->set_noise_particles(0.01, 0.01, 3.0);
-    movement mv;
-
-    random_device generator;
-    mt19937 gen(generator());
-    uniform_int_distribution<int> randomDist(1, 3);
-    uniform_real_distribution<float> randomTh(-.5,.5);
+    myMcl->set_noise_particles(noise_foward, noise_turn, noise_sense);
 
     if(localization) //TRUE = LOCAL
         myMcl->set_position(robo->robot_pose);
@@ -51,8 +54,6 @@ void thread_mcl::run_normal(){
     while(true){
         mv.dist = randomDist(gen);
         mv.angle = randomTh(gen);
-//        mv.dist = 5;
-//        mv.angle = 0;
 
         img = myMcl->Gera_Imagem_Pixmap(this->robo);
 
@@ -60,11 +61,11 @@ void thread_mcl::run_normal(){
 
         myMcl->sampling(mv);
         state = "\n\t\t\t  Sampling";
-        usleep(90000);
+        usleep(timeSleep);
 
         myMcl->weight_particles(robo->sense());
         state = "\n\t\t\t  Weighting";
-        usleep(90000);
+        usleep(timeSleep);
 
         if(flag_neff){ //TRUE = neff on  - FALSE = neff off
 
@@ -74,51 +75,53 @@ void thread_mcl::run_normal(){
 //                myMcl->resample();
                 myMcl->resample_Roleta();
                 state = "\n\t\t\t  Resampling";
-                usleep(90000);
+                usleep(timeSleep);
             }
             neff = QString::number(neff2);
         }else{
             myMcl->resample_Roleta();
             state = "\n\t\t\t  Resampling";
-            usleep(90000);
+            usleep(timeSleep);
             neff = "OFF";
         }
         cout<<"T:"<<T++<<endl;
-
     }
 }
 
 void thread_mcl::run_kdl_sampling(){
-    this->build_tablez();
-    float confidence, error, zvalue;
-    int T, k, M, Mx, limit_min;
-
-    T = 0;
-    limit_min = 300;
-    robo->representation();
-
-//    myMcl.set_position(robo.robot_pose);
-    myMcl->set_noise_particles(0.01, 0.01, 3.0);
+    //--- SETTING VARIABLES ---
+    int T = 0;
+    int limit_min = 300;
+    int k, M, Mx;
+    float confidence = 0.3; // ztable is from right side of mean (Values between 0 ~ .5)
+    float error = 0.4;
+    float zvalue = 4.1;
+    float noise_foward = 0.01;
+    float noise_turn = 0.01;
+    float noise_sense = 3.0;
     movement mv;
-
     random_device generator;
     mt19937 gen(generator());
+
     uniform_int_distribution<int> randomDist(1, 3);
     std::uniform_real_distribution<double> randomTh(-.5,.5);
+    //-------------------------
+    this->build_tablez();
+
+    robo->representation();
+
+    myMcl->set_noise_particles(noise_foward, noise_turn, noise_sense);
 
     if(localization) //TRUE = LOCAL
         myMcl->set_position(robo->robot_pose);
 
-    confidence = 0.49; // ztable is from right side of mean (Values between 0 ~ .5)
     confidence = fmin(0.49998,fmax(0,confidence));
 
-    error = 1;
-    zvalue = 4.1;
     for(int i = 0; i < ztable.size(); i++){
         if(ztable[i] >= confidence){
             zvalue = i/100.00;
             cout<<"ztable["<<i<<"] = "<<ztable[i]<<"  >=  "<<confidence<<endl;
-            cout<<"VALOR DO Z: "<<zvalue<<endl;
+            cout<<"Z VALUE: "<<zvalue<<endl;
             break;
         }
     }
@@ -154,16 +157,17 @@ void thread_mcl::run_kdl_sampling(){
                 k++;
                 if(k > 1){
                   Mx = (int)ceil(((k-1)/(2*error))*pow(1 - (2/(9.0*(k-1))) + (sqrt(2/(9.0*(k-1))))*zvalue,3));
-                  cout<<"VALOR DO Mx: "<<Mx<<endl;
-                }
-                if(Mx < limit_min){
-                    Mx = limit_min;
+                  cout<<"Mx VALUE: "<<Mx<<endl;
                 }
             }
             M++;
-            cout<<"M:"<<M<<" Mx:"<<Mx<<endl;
+            if(Mx < limit_min)
+                Mx = limit_min;
+            cout<<"M:"<<M<<" Mx:"<<Mx;
+            cout<<" -- Scale particle:"<<new_particle.s<<endl;
         }while(M < Mx);
-        cout<<"------------------ End-while -------------------"<<endl;
+
+        n_particles = M;
         myMcl->particles.clear();
         myMcl->particles = new_particles;
         sleep(1);
@@ -174,9 +178,8 @@ bool thread_mcl::bin_is_empty(particle oneP){
     if(myMap->empty[oneP.x][oneP.y]){ //TRUE -> IT MEANS THAT THE BIN WAS EMPTY
         myMap->empty[oneP.x][oneP.y] = false;
         return true;
-    }else{                            //FALSE -> IT MEANS THAT THE BIN IS NON-EMPTY
+    }else                            //FALSE -> IT MEANS THAT THE BIN IS NON-EMPTY
         return false;
-    }
 }
 
 void thread_mcl::build_tablez(){
